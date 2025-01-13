@@ -45,5 +45,5 @@ En este juego, el objetivo es adivinar un número de 5 cifras que contiene dígi
 
 1. Abre una terminal o símbolo del sistema.
 2. Navega al directorio donde se encuentra el archivo fuente (por ejemplo, `juego.cpp`).
-3. Compila el código usando el siguiente comando (asegúrate de tener MinGW o g++ instalado):
+3. Compila el código usando el siguiente comando (asegúrate de tener MinGW o g++ instalado).
 
