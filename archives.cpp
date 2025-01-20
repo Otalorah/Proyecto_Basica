@@ -82,14 +82,5 @@ void guardarPuntajes(const Puntaje& p) {
     } else {
         cout << "ERROR:--Los datos no se guardaron correctamente--" << endl;
     }
-}
 
-int main() {
-    Puntaje p;
-    p.nombre = "Juan";           // Nombre del jugador
-    p.num_oculto = 25;           // Número adivinado
-    p.intentos = 5;              // Número de intentos
 
-    guardarPuntajes(p);          // Guardar el puntaje en el archivo
-    return 0;
-}
