@@ -1,86 +1,39 @@
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
 #include <string>
+#include <vector>
 
 using namespace std;
 
-struct Puntaje {
-    string nombre;    // Nombre del jugador
-    int num_oculto;   // Número adivinado
-    int intentos;     // Número de intentos
-
-    // Métodos para obtener los valores de las variables miembro
-    int obtenerNumOculto() const {
-        return num_oculto;
-    }
-
-    string obtenerNombre() const {
-        return nombre;
-    }
-
-    int obtenerIntentos() const {
-        return intentos;
-    }
-};
-
-void guardarPuntajes(const Puntaje& p) {
-
-    setlocale(LC_ALL, "spanish");
-
-    // Abrir el archivo en modo anexado
-    ofstream archivo("puntajes.txt", ios::app);
-    if (archivo.is_open()) {
-        // Escribir los datos en el archivo
-        archivo << p.obtenerNombre() << " - NÚMERO ADIVINADO: " << p.obtenerNumOculto() 
-                << " - NUMERO DE INTENTOS: " << p.obtenerIntentos() << endl;
-        archivo.close();
-        cout << "DATOS GUARDADOS CORRECTAMENTE" << endl;
+// Función para guardar los puntajes en un archivo
+void saveScores(vector<string>& playerNames, vector<vector<int>>& hideNums, vector<int>& attempts) {
+    ofstream file("scores.txt", ios::app);  // Abrir el archivo en modo anexar
+    if (file.is_open()) {
+        for (size_t i = 0; i < playerNames.size(); ++i) {
+            file << "Jugador: " << playerNames[i] << "\n";
+            file << "Número oculto adivinado: ";
+            for (const auto& digit : hideNums[i]) {
+                file << digit;  // Escribir cada dígito 
+            }
+            file << "\nIntentos: " << attempts[i] << "\n";
+            file << "--------------------------\n";
+        }
+        file.close();
+        cout << "PUNTAJE GUARDADO CORRECTAMENTE." << endl;
     } else {
-        cout << "ERROR:--Los datos no se guardaron correctamente--" << endl;
+        cout << "ERROR: Los datos no se guardaron correctamente." << endl;
     }
 }
 
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <string>
+int main() {
+    vector<string> playerNames = {"Alice", "Bob"};
+    vector<vector<int>> hideNums = {{1, 2, 3}, {4, 5, 6}};
+    vector<int> attempts = {3, 5};
 
-using namespace std;
+    saveScores(playerNames, hideNums, attempts);
 
-struct Puntaje {
-    string nombre;    // Nombre del jugador
-    int num_oculto;   // Número adivinado
-    int intentos;     // Número de intentos
+    return 0;
+}
 
-    // Métodos para obtener los valores de las variables miembro
-    int obtenerNumOculto() const {
-        return num_oculto;
-    }
-
-    string obtenerNombre() const {
-        return nombre;
-    }
-
-    int obtenerIntentos() const {
-        return intentos;
-    }
-};
-
-void guardarPuntajes(const Puntaje& p) {
-
-    setlocale(LC_ALL, "spanish");
-
-    // Abrir el archivo en modo anexado
-    ofstream archivo("puntajes.txt", ios::app);
-    if (archivo.is_open()) {
-        // Escribir los datos en el archivo
-        archivo << p.obtenerNombre() << " - NÚMERO ADIVINADO: " << p.obtenerNumOculto() 
-                << " - NUMERO DE INTENTOS UTILIZADOS: " << p.obtenerIntentos() << endl;
-        archivo.close();
-        cout << "DATOS GUARDADOS CORRECTAMENTE" << endl;
-    } else {
-        cout << "ERROR:--Los datos no se guardaron correctamente--" << endl;
-    }
 
 
