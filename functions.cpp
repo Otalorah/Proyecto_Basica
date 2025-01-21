@@ -1,100 +1,97 @@
 #include <iostream>
 #include <locale>
-#include <stdlib.h>
 #include <random>
 #include <string>
 #include <vector>
-#include <algorithm>
 #include <ctime>
-#include <set>
+#include <unordered_set>
 #include <utility>
+#include <algorithm>
+#include <stdlib.h>
 
 using namespace std;
 
-vector<int> num_oculto();
-vector<int> intento(int num);
-void resultado();
-pair<int, int> comprobacion(const vector<int>& num, const vector<int>& numIngresado);
+vector<int> hideNum();
+vector<int> attempt(int num);
+pair<int, int> checkUp(const vector<int>& num, const vector<int>& joinedNum);
 
 int main(){
     setlocale(LC_ALL, "spanish");
     
     wcout << L"Número oculto: " << endl;
 
-    vector<int>num = num_oculto();
-    for (int i : num) {
+    vector<int>num = hideNum();
+    for (auto i : num) {
         wcout << i << L" ";  // Imprimir cada dígito
     }
 
-    vector<int> intentoVec = intento(45678);
+    vector<int> tryVec = attempt(45678);
 
-    pair<int, int> resultado = comprobacion(num, intentoVec);
+    pair<int, int> result = checkUp(num, tryVec);
 
 
-    wcout << "\nFijas: " << resultado.first << endl;
-    wcout <<  "Picas: " << resultado.second << endl;
+    wcout << "\nFijas: " << result.first << endl;
+    wcout <<  "Picas: " << result.second << endl;
+
     system("pause");
+
     return 0;
 
 }
 
-//Funcion que arroja el resultado de la comparacion entre el numero ingresado y el numero generado aleatoriamente.
-void resultado(){
-
-}
-
 //Funcion que comprobará el numero ingresado con el numero generado aleatoriamente.
-pair<int, int> comprobacion(const vector<int>& num, const vector<int>& numIngresado){
+pair<int, int> checkUp(const vector<int>& num, const vector<int>& joinedNum){
     int fijas = 0, picas = 0;
+    unordered_set<int> numSet(num.begin(), num.end());
 
     for (int i = 0; i < num.size(); i++){
-        if (num[i] == numIngresado[i]){
+        if (num[i] == joinedNum[i]){
             fijas++;
         }
     }
 
-    for (int i = 0; i < num.size(); i++){
-        for (int j = 0; j < numIngresado.size(); j++){
-            if (num[i] == numIngresado[j]){
+    for (size_t i = 0; i < num.size(); ++i){
+        if (num[i] != joinedNum[i]){
+            if (numSet.find(joinedNum[i]) != numSet.end()){
                 picas++;
             }
         }
     }
-
-    picas -= fijas;
     
     return make_pair(fijas, picas);
 
 }
 
 //Funcion que permite el ingreso de un numero y lo convierte a un vector.
-vector<int> intento(int num){
-    vector<int> numIngresado;
+vector<int> attempt(int num){
+    vector<int> joinedNum;
 
     while (num > 0){
-        numIngresado.insert(numIngresado.begin(), num % 10);
+        joinedNum.push_back(num % 10);
         num /= 10;
     }
 
-    return numIngresado;
+    reverse(joinedNum.begin(), joinedNum.end());
+
+    return joinedNum;
 }
 
 //Función que crea un número aleatorio de 5 cifras sin repetir dígitos
-vector<int> num_oculto(){
+vector<int> hideNum(){
     vector<int> num;
-    set<int> numGen;
+    unordered_set<int> numGen;
 
     unsigned seed = static_cast<unsigned>(time(0));
-    mt19937 generador(seed);
+    mt19937 generator(seed);
 
-    uniform_int_distribution<int>distribucion{0, 9};
+    uniform_int_distribution<int>distribution{0, 9};
 
     while (num.size() < 5){
-        int digito = distribucion(generador);
+        int digit = distribution(generator);
         
-        if (numGen.find(digito) == numGen.end()){
-            num.push_back(digito);
-            numGen.insert(digito);
+        if (numGen.find(digit) == numGen.end()){
+            num.push_back(digit);
+            numGen.insert(digit);
         }
     }
 
