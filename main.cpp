@@ -9,8 +9,9 @@
 using namespace std;
 
 // Se definen las constantes
-# define NEW_ATTEMPT 1
 # define NUM_DIGITS 5
+# define NEW_ATTEMPT 1
+# define CLOSE_MODAL 2
 # define MAX_ATTEMPTS 10
 
 // Se declaran las funciones
@@ -22,8 +23,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Se declaran variables globales
-HWND attempText;
-HWND contentRows;
+HWND hInfo;
+HWND hattempText;
+HWND hmainWindow;
+HWND hcontentRows; // Para ver lo del scroll
 int numAttemps = 1;
 HBRUSH hBrushStatic;
 char numInput[NUM_DIGITS + 1];
@@ -45,14 +48,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     registerDialogClass(hInstance);
 
     // Se crea la ventana principal
-    HWND hwnd = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 760, 600, // La posición y tamaño de la ventana
+    hmainWindow = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
+        400, 50, 760, 600, // La posición y tamaño de la ventana
         NULL, NULL, hInstance, NULL
     );
 
     // En caso de no poder crear la ventana
-    if (hwnd == NULL) return 0;
-    ShowWindow(hwnd, nCmdShow);
+    if (hmainWindow == NULL) return 0;
+    ShowWindow(hmainWindow, nCmdShow);
 
     // Ciclo de mensajes de la ventana
     MSG msg = { };
@@ -68,114 +71,139 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 // Función para manejar los mensajes de la ventana principal
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hwnd, &ps);
+   switch (uMsg)
+   {
+   case WM_DESTROY:
+      PostQuitMessage(0);
+      return 0;
+   case WM_PAINT:
+   {
+      PAINTSTRUCT ps;
+      // Se crea el pincel
+      HBRUSH brush = CreateSolidBrush(RGB(225, 160, 0));
+      // Comienza el trazo
+      HDC hdc = BeginPaint(hwnd, &ps);
 
-        // Se pinta la pantalla de la ventana
-        HBRUSH brush = CreateSolidBrush(RGB(225, 160, 0));
-        FillRect(hdc, &ps.rcPaint, brush);
-        DeleteObject(brush);
+         // Se pinta la pantalla de la ventana principal
+         FillRect(hdc, &ps.rcPaint, brush);
 
-        EndPaint(hwnd, &ps);
+      // Finaliza el trazo
+      EndPaint(hwnd, &ps);
 
-        return 0;
-    }
-    case WM_CREATE:
-    {
-        // Se muestra el modal
-        displayDialog(hwnd);
-        // Se inicializa la interfaz
-        initializeInterface(hwnd);
-        return 0;
-    }
-    case WM_CTLCOLORSTATIC:
-    {
-        HDC hdcStatic = (HDC)wParam;
-        SetBkColor(hdcStatic, colorRows);
-        return (INT_PTR)hBrushStatic;
-    }
-    case WM_COMMAND:
-    {
-        switch (LOWORD(wParam))
-        {
-            case NEW_ATTEMPT:
-            {
-                if (numAttemps <= MAX_ATTEMPTS) {
-                    // Se crea la fila
-                    createRow(hwnd);
-                    numAttemps++;
-                }
-            }
-        }
-        return 0;
-    }
-    }
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+      // Commienza el trazo para el texto de guía
+      HDC hdcI = BeginPaint(hInfo, &ps);
+
+         // Se pinta la ventana
+         FillRect(hdcI, &ps.rcPaint, brush);
+         // Se elimina el pincel
+         DeleteObject(brush);
+
+         // Dibujar texto en la ventana
+         SetTextColor(hdcI, RGB(255, 255, 255)); // Color del texto
+         SetBkMode(hdcI, TRANSPARENT); // Fondo transparente para el texto
+         TextOut(hdcI, 0, 0, L"INGRESE EL NÚMERO PARA ADIVINAR", 32);
+
+      // Finaliza el trazo
+      EndPaint(hInfo, &ps);
+
+      return 0;
+   }
+   case WM_CREATE:
+   {
+      // Se muestra el modal
+      displayDialog(hwnd);
+      // Se inicializa la interfaz
+      initializeInterface(hwnd);
+      return 0;
+   }
+   case WM_CTLCOLORSTATIC:
+   {
+      // Obtener el dispositivo de contexto desde wParam
+      HDC hdcStatic = (HDC) wParam;
+      // Establecer el color de fondo
+      SetBkColor(hdcStatic, colorRows);
+      // Devolver el manejador del pincel
+      return (INT_PTR)hBrushStatic;
+   }
+   case WM_COMMAND:
+   {
+      switch (LOWORD(wParam))
+      {
+         case NEW_ATTEMPT:
+         {
+               // Si no ha superado la máxima cantidad de itentos
+               if (numAttemps <= MAX_ATTEMPTS) {
+                  // Se crea la fila
+                  createRow(hwnd);
+                  numAttemps++;
+               }
+         }
+      }
+      return 0;
+   }
+   }
+   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 // Función para crear las ventanas iniciales de la interfaz
 void initializeInterface(HWND hwnd)
 {
-    // Se crean los títulos de las columnas
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"INTENTO #", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 0, 190, 43, hwnd, NULL, NULL, NULL);
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"NÚMERO", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, 0, 190, 43, hwnd, NULL, NULL, NULL);
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"PICAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, 0, 190, 43, hwnd, NULL, NULL, NULL);
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"FIJAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, 0, 190, 43, hwnd, NULL, NULL, NULL);
+   // Se crean los títulos de las columnas
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"INTENTO #", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 0, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"NÚMERO", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, 0, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"PICAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, 0, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"FIJAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, 0, 190, 43, hwnd, NULL, NULL, NULL);
 
-    // Se crea el cuadro para ingresar el número
-    attempText = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 348, 507, 68, 15, hwnd, NULL, NULL, NULL);
+   // Texto para guiar al usuario
+   hInfo = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 248, 485, 268, 15, hwnd, NULL, NULL, NULL);
+   
+   // Se crea el cuadro para ingresar el número
+   hattempText = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 348, 507, 68, 15, hwnd, NULL, NULL, NULL);
 
-    // Establecer el límite máximo de caracteres
-    SendMessage(attempText, EM_SETLIMITTEXT, NUM_DIGITS, 0);
+   // Establecer el límite máximo de caracteres
+   SendMessage(hattempText, EM_SETLIMITTEXT, NUM_DIGITS, 0);
 
-    // Se crea el botón
-    CreateWindowEx(WS_EX_LTRREADING, L"Button", L"Adivinar", WS_CHILD | WS_VISIBLE | WS_BORDER, 348, 525, 68, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
+   // Se crea el botón para adivinar
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"Adivinar", WS_CHILD | WS_VISIBLE | WS_BORDER, 348, 525, 68, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
 }
 
 // Función para mostrar el resultado de cada intento
 void createRow(HWND hwnd)
 {
-    // Se calcula la altura de la fila
-    int height = 43 * numAttemps;
+   // Se calcula la altura de la fila
+   int height = 43 * numAttemps;
 
-    // Se obtiene el número ingresado
-    GetWindowTextA(attempText, numInput, NUM_DIGITS + 1);
+   // Se obtiene el número ingresado
+   GetWindowTextA(hattempText, numInput, NUM_DIGITS + 1);
 
-    // Convertir datos a wstring
-    wstring attemptStr = to_wstring(numAttemps);
-    wstring textNum = wstring(numInput, numInput + NUM_DIGITS);
+   // Convertir datos a wstring
+   wstring attemptStr = to_wstring(numAttemps);
+   wstring textNum = wstring(numInput, numInput + NUM_DIGITS);
 
-    // Crear la ventana con el número de intento
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", attemptStr.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, height, 190, 43, hwnd, NULL, NULL, NULL);
+   // Crear la ventana con el número de intento
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", attemptStr.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, height, 190, 43, hwnd, NULL, NULL, NULL);
 
-    // Crear la ventana con el número ingresado
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", textNum.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, height, 190, 43, hwnd, NULL, NULL, NULL);
+   // Crear la ventana con el número ingresado
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", textNum.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, height, 190, 43, hwnd, NULL, NULL, NULL);
 
-    // Crear la ventana con el número de picas
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"No se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, height, 190, 43, hwnd, NULL, NULL, NULL);
+   // Crear la ventana con el número de picas
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"No se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, height, 190, 43, hwnd, NULL, NULL, NULL);
 
-    // Crear la ventana con el número de fijas
-    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Tampoco se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, height, 190, 43, hwnd, NULL, NULL, NULL);
+   // Crear la ventana con el número de fijas
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Tampoco se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, height, 190, 43, hwnd, NULL, NULL, NULL);
 
-    // Crear el pincel para el color de fondo
-    hBrushStatic = CreateSolidBrush(colorRows);
+   // Crear el pincel para el color de fondo
+   hBrushStatic = CreateSolidBrush(colorRows);
 
-    // Eliminar el texto ingresado por el usuario
-    SetWindowText(attempText, L"");
+   // Eliminar el texto ingresado por el usuario
+   SetWindowText(hattempText, L"");
 }
 
 void registerDialogClass(HINSTANCE hInstance)
 {
     WNDCLASS dialog = { };
 
-    // Se le asignan las propiedades al objeto wc
+    // Se le asignan las propiedades al objeto dialog
     dialog.hInstance = hInstance;
     dialog.lpfnWndProc = DialogProcedure;
     dialog.lpszClassName = L"DialogClass";
@@ -185,16 +213,63 @@ void registerDialogClass(HINSTANCE hInstance)
 
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
-        case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    }
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+   switch (uMsg)
+   {
+      case WM_DESTROY:
+      {
+         DestroyWindow(hwnd);
+         return 0;
+      }
+      case WM_PAINT:
+      {
+         PAINTSTRUCT ps;
+         // Comienza el trazo
+         HDC hdc = BeginPaint(hwnd, &ps);
+
+            // Se crea el pincel
+            HBRUSH hBrush = CreateSolidBrush(RGB(240, 240, 240));
+            // Se pinta la pantalla del modal
+            FillRect(hdc, &ps.rcPaint, hBrush);
+            // Se elimina el pincel
+            DeleteObject(hBrush);
+
+         // Finaliza el trazo
+         EndPaint(hwnd, &ps);
+
+         return 0;
+      } 
+      case WM_COMMAND:
+      {
+         switch (LOWORD(wParam))
+         {
+            case CLOSE_MODAL:
+            {
+               DestroyWindow(hwnd);
+            }
+         }
+         return 0;
+      } 
+   }
+   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 void displayDialog(HWND hwnd)
 {
-    CreateWindowW(L"DialogClass", L"Bienvenido", WS_VISIBLE | WS_OVERLAPPEDWINDOW, 400, 400, 200, 200, hwnd, NULL, NULL, NULL);
+   // Se crea la ventana de diálogo 
+   HWND dialogModal = CreateWindowW(L"DialogClass", L"Bienvenido", WS_VISIBLE | WS_OVERLAPPEDWINDOW | SS_CENTERIMAGE | SS_CENTER, 525, 100, 500, 500, hwnd, NULL, NULL, NULL);
+
+   // Se crea el texto de bienvenida
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"¡PICAS Y FIJAS!", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el texto para explicar el juego
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"ESTE JUEGO CONSISTE EN ADIVINAR UN NÚMERO DE 5 CIFRAS.", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 75, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el texto para mostrar a los autores
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"AUTORES: Juan Manuel Otálora Hernández", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 325, 500, 25, dialogModal, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Johan Stevan Bermeo Buitrago", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 350, 500, 25, dialogModal, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Juan Camilo Triana Paipa", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 375, 500, 25, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el boton para iniciar
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"INICIAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 216, 425, 68, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
+
 }
