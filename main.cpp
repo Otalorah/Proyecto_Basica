@@ -20,6 +20,7 @@ void displayDialog(HWND hwnd);
 void initializeInterface(HWND hwnd);
 void registerDialogClass(HINSTANCE hInstance);
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void paintModalW(HWND hwnd, wstring text, int x, int y, int width);
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Se declaran variables globales
@@ -32,40 +33,50 @@ HBRUSH hBrushStatic;
 char numInput[NUM_DIGITS + 1];
 COLORREF colorRows = RGB(225, 225, 225);
 
+// Se declaran variables de la ventana de diálogo
+HWND hTitle;
+HWND hAuthorO;
+HWND hAuthorB;
+HWND hAuthorT;
+HWND hSubTitle;
+HWND hUsernameLabel;
+HWND hUsernameInput;
+
+// Función principal
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-    // Se registra el nombre de la clase
-    const wchar_t CLASS_NAME[] = L"JUEGO PICAS Y FIJAS";
+   // Se registra el nombre de la clase
+   const wchar_t CLASS_NAME[] = L"JUEGO PICAS Y FIJAS";
 
-    WNDCLASS wc = { };
+   WNDCLASS wc = { };
 
-    // Se le asignan las propiedades al objeto wc
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = hInstance;
-    wc.lpszClassName = CLASS_NAME;
+   // Se le asignan las propiedades al objeto wc
+   wc.lpfnWndProc = WindowProc;
+   wc.hInstance = hInstance;
+   wc.lpszClassName = CLASS_NAME;
 
-    RegisterClass(&wc);
-    registerDialogClass(hInstance);
+   RegisterClass(&wc);
+   registerDialogClass(hInstance);
 
-    // Se crea la ventana principal
-    hmainWindow = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
-        400, 50, 760, 600, // La posición y tamaño de la ventana
-        NULL, NULL, hInstance, NULL
-    );
+   // Se crea la ventana principal
+   hmainWindow = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
+      400, 50, 760, 600, // La posición y tamaño de la ventana
+      NULL, NULL, hInstance, NULL
+   );
 
-    // En caso de no poder crear la ventana
-    if (hmainWindow == NULL) return 0;
-    ShowWindow(hmainWindow, nCmdShow);
+   // En caso de no poder crear la ventana
+   if (hmainWindow == NULL) return 0;
+   ShowWindow(hmainWindow, nCmdShow);
 
-    // Ciclo de mensajes de la ventana
-    MSG msg = { };
-    while (GetMessage(&msg, NULL, 0, 0) > 0)
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+   // Ciclo de mensajes de la ventana
+   MSG msg = { };
+   while (GetMessage(&msg, NULL, 0, 0) > 0)
+   {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+   }
 
-    return 0;
+   return 0;
 }
 
 // Función para manejar los mensajes de la ventana principal
@@ -199,6 +210,7 @@ void createRow(HWND hwnd)
    SetWindowText(hattempText, L"");
 }
 
+// Función para registrar la clase de la ventana de diálogo
 void registerDialogClass(HINSTANCE hInstance)
 {
     WNDCLASS dialog = { };
@@ -211,6 +223,7 @@ void registerDialogClass(HINSTANCE hInstance)
     RegisterClass(&dialog);
 }
 
+// Función para manejar los mensajes de la ventana de diálogo
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
@@ -227,14 +240,19 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
          HDC hdc = BeginPaint(hwnd, &ps);
 
             // Se crea el pincel
-            HBRUSH hBrush = CreateSolidBrush(RGB(240, 240, 240));
+            HBRUSH hBrush = CreateSolidBrush(RGB(225, 160, 0));
             // Se pinta la pantalla del modal
             FillRect(hdc, &ps.rcPaint, hBrush);
-            // Se elimina el pincel
-            DeleteObject(hBrush);
 
-         // Finaliza el trazo
          EndPaint(hwnd, &ps);
+         DeleteObject(hBrush);
+         // Se pintan las ventanas dentro de la modal
+         paintModalW(hTitle, L"¡PICAS Y FIJAS!", 200, 0, 15);
+         paintModalW(hSubTitle, L"El juego consiste en adivinar un número de 5 dígitos", 80, 0, 52);
+         paintModalW(hUsernameLabel, L"Por favor ingrese su usuario:", 25, 0, 30);
+         paintModalW(hAuthorO, L"AUTORES: Juan Manuel Otálora Hernández", 100, 0, 40);
+         paintModalW(hAuthorB, L"Johan Stevan Bermeo Buitrago", 140, 0, 28);
+         paintModalW(hAuthorT, L"Juan Camilo Triana Paipa", 157, 0, 25);
 
          return 0;
       } 
@@ -244,32 +262,76 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
          {
             case CLOSE_MODAL:
             {
-               DestroyWindow(hwnd);
+               char username[25];
+               // Se obtiene el username ingresado
+               GetWindowTextA(hUsernameInput, username, 25);
+
+               // Se valida si el usuario ingresó un nombre
+               if (strlen(username) > 0)
+               {
+                  // Se elimina la ventana de diálogo
+                  DestroyWindow(hwnd);
+               }
+               else
+               {
+                  MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK);
+               };
             }
-         }
+         } 
          return 0;
-      } 
+      }
    }
    return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
+// Función para mostrar la ventana de diálogo
 void displayDialog(HWND hwnd)
 {
    // Se crea la ventana de diálogo 
    HWND dialogModal = CreateWindowW(L"DialogClass", L"Bienvenido", WS_VISIBLE | WS_OVERLAPPEDWINDOW | SS_CENTERIMAGE | SS_CENTER, 525, 100, 500, 500, hwnd, NULL, NULL, NULL);
 
    // Se crea el texto de bienvenida
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"¡PICAS Y FIJAS!", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
+   hTitle = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
 
    // Se crea el texto para explicar el juego
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"ESTE JUEGO CONSISTE EN ADIVINAR UN NÚMERO DE 5 CIFRAS.", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 75, 500, 50, dialogModal, NULL, NULL, NULL);
+   hSubTitle = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 55, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el texto para indicar el ingreso de un username
+   hUsernameLabel = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 125, 225, 250, 15, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el cuadro para ingresar el username
+   hUsernameInput = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 120, 250, 250, 15, dialogModal, NULL, NULL, NULL);
 
    // Se crea el texto para mostrar a los autores
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"AUTORES: Juan Manuel Otálora Hernández", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 325, 500, 25, dialogModal, NULL, NULL, NULL);
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Johan Stevan Bermeo Buitrago", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 350, 500, 25, dialogModal, NULL, NULL, NULL);
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Juan Camilo Triana Paipa", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 375, 500, 25, dialogModal, NULL, NULL, NULL);
+   hAuthorO = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 325, 500, 25, dialogModal, NULL, NULL, NULL);
+   hAuthorB = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 350, 500, 25, dialogModal, NULL, NULL, NULL);
+   hAuthorT = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 375, 500, 25, dialogModal, NULL, NULL, NULL);
 
    // Se crea el boton para iniciar
    CreateWindowEx(WS_EX_LTRREADING, L"Button", L"INICIAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 216, 425, 68, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
+
+}
+
+// Función para pintar las ventanas de la modal
+void paintModalW(HWND hwnd, wstring text, int x, int y, int width)
+{
+   PAINTSTRUCT ps;
+   HBRUSH hBrush = CreateSolidBrush(RGB(225, 160, 0));
+
+   // Commienza el trazo
+   HDC hdc = BeginPaint(hwnd, &ps);
+
+      // Se pinta la ventana
+      FillRect(hdc, &ps.rcPaint, hBrush);
+      // Se elimina el pincel
+      DeleteObject(hBrush);
+
+      // Dibujar texto en la ventana
+      SetTextColor(hdc, RGB(255, 255, 255)); // Color del texto
+      SetBkMode(hdc, TRANSPARENT); // Fondo transparente para el texto
+      TextOut(hdc, x, y, text.c_str(), width);
+
+   // Finaliza el trazo
+   EndPaint(hwnd, &ps);
 
 }
