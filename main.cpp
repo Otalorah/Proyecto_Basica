@@ -12,6 +12,7 @@ using namespace std;
 # define NUM_DIGITS 5
 # define NEW_ATTEMPT 1
 # define CLOSE_MODAL 2
+# define SHOW_SCORES 3
 # define MAX_ATTEMPTS 10
 
 // Se declaran las funciones
@@ -19,8 +20,8 @@ void createRow(HWND hwnd);
 void displayDialog(HWND hwnd);
 void initializeInterface(HWND hwnd);
 void registerDialogClass(HINSTANCE hInstance);
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void paintModalW(HWND hwnd, wstring text, int x, int y, int width);
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Se declaran variables globales
@@ -39,6 +40,7 @@ HWND hAuthorO;
 HWND hAuthorB;
 HWND hAuthorT;
 HWND hSubTitle;
+HWND hShowScores;
 HWND hUsernameLabel;
 HWND hUsernameInput;
 
@@ -60,7 +62,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
    // Se crea la ventana principal
    hmainWindow = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
-      400, 50, 760, 600, // La posición y tamaño de la ventana
+      370, 50, 800, 600, // La posición y tamaño de la ventana
       NULL, NULL, hInstance, NULL
    );
 
@@ -160,22 +162,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 void initializeInterface(HWND hwnd)
 {
    // Se crean los títulos de las columnas
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"INTENTO #", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 0, 190, 43, hwnd, NULL, NULL, NULL);
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"NÚMERO", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, 0, 190, 43, hwnd, NULL, NULL, NULL);
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"PICAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, 0, 190, 43, hwnd, NULL, NULL, NULL);
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"FIJAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, 0, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"INTENTO #", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 0, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"NÚMERO", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 160, 0, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"PICAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 320, 0, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"FIJAS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 480, 0, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"PUNTOS", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 640, 0, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Texto para guiar al usuario
-   hInfo = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 248, 485, 268, 15, hwnd, NULL, NULL, NULL);
+   hInfo = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 268, 485, 268, 15, hwnd, NULL, NULL, NULL);
    
    // Se crea el cuadro para ingresar el número
-   hattempText = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 348, 507, 68, 15, hwnd, NULL, NULL, NULL);
+   hattempText = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 358, 507, 88, 15, hwnd, NULL, NULL, NULL);
 
    // Establecer el límite máximo de caracteres
    SendMessage(hattempText, EM_SETLIMITTEXT, NUM_DIGITS, 0);
 
    // Se crea el botón para adivinar
-   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"Adivinar", WS_CHILD | WS_VISIBLE | WS_BORDER, 348, 525, 68, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"Adivinar", WS_CHILD | WS_VISIBLE | WS_BORDER, 358, 525, 88, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
 }
 
 // Función para mostrar el resultado de cada intento
@@ -192,16 +195,19 @@ void createRow(HWND hwnd)
    wstring textNum = wstring(numInput, numInput + NUM_DIGITS);
 
    // Crear la ventana con el número de intento
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", attemptStr.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, height, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", attemptStr.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número ingresado
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", textNum.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 190, height, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", textNum.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 160, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número de picas
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"No se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 380, height, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"No se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 320, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número de fijas
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Tampoco se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 570, height, 190, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Tampoco se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 480, height, 160, 43, hwnd, NULL, NULL, NULL);
+
+   // Crear la ventana con el número de puntos
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"0", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 640, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear el pincel para el color de fondo
    hBrushStatic = CreateSolidBrush(colorRows);
@@ -226,11 +232,19 @@ void registerDialogClass(HINSTANCE hInstance)
 // Función para manejar los mensajes de la ventana de diálogo
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+ 
+
    switch (uMsg)
    {
-      case WM_DESTROY:
+      case WM_CLOSE:
       {
-         DestroyWindow(hwnd);
+         char username[25];
+         // Se obtiene el username ingresado
+         GetWindowTextA(hUsernameInput, username, 25);    
+
+         // Se valida si el usuario ingresó un nombre
+         if (strlen(username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
+         else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
          return 0;
       }
       case WM_PAINT:
@@ -267,15 +281,13 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                GetWindowTextA(hUsernameInput, username, 25);
 
                // Se valida si el usuario ingresó un nombre
-               if (strlen(username) > 0)
-               {
-                  // Se elimina la ventana de diálogo
-                  DestroyWindow(hwnd);
-               }
-               else
-               {
-                  MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK);
-               };
+               if (strlen(username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
+               else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
+            }
+            case SHOW_SCORES:
+            {
+               // Se muestra un mensaje con los puntajes
+               MessageBox(hwnd, L"Los puntajes se mostrarán aquí", L"Puntajes", MB_OK);
             }
          } 
          return 0;
@@ -301,6 +313,9 @@ void displayDialog(HWND hwnd)
 
    // Se crea el cuadro para ingresar el username
    hUsernameInput = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 120, 250, 250, 15, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el botón para ver los puntajes
+   hShowScores = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VER PUNTAJES", WS_CHILD | WS_VISIBLE | WS_BORDER, 196, 275, 108, 30, dialogModal, (HMENU) SHOW_SCORES, NULL, NULL);
 
    // Se crea el texto para mostrar a los autores
    hAuthorO = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 325, 500, 25, dialogModal, NULL, NULL, NULL);
