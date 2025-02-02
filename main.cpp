@@ -4,7 +4,7 @@
 
 #include <string>
 #include <windows.h>
-// #include "functions.h"
+#include "functions.h"
 
 using namespace std;
 
@@ -19,6 +19,7 @@ using namespace std;
 void createRow(HWND hwnd);
 void displayDialog(HWND hwnd);
 void initializeInterface(HWND hwnd);
+int calculatePoints(int fixeds, int spades);
 void registerDialogClass(HINSTANCE hInstance);
 void paintModalW(HWND hwnd, wstring text, int x, int y, int width);
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -28,10 +29,9 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 HWND hInfo;
 HWND hattempText;
 HWND hmainWindow;
-HWND hcontentRows; // Para ver lo del scroll
 int numAttemps = 1;
 HBRUSH hBrushStatic;
-char numInput[NUM_DIGITS + 1];
+vector<int> secretNum = hideNum();
 COLORREF colorRows = RGB(225, 225, 225);
 
 // Se declaran variables de la ventana de diálogo
@@ -144,12 +144,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
          case NEW_ATTEMPT:
          {
+            char attempText[NUM_DIGITS];
+            GetWindowTextA(hattempText, attempText, NUM_DIGITS + 1);
+
+            // TODO: Validar si el texto ingresado tiene un número repetido
+            // TODO: Validar si el texto ingresado tiene un caracter que no es un número
+
+            if (strlen(attempText) < NUM_DIGITS) 
+            {
+               MessageBox(hwnd, L"Ingrese un número de 5 cifras", L"Número inválido", MB_OK);
+            }
+            else 
+            {
                // Si no ha superado la máxima cantidad de itentos
                if (numAttemps <= MAX_ATTEMPTS) {
                   // Se crea la fila
                   createRow(hwnd);
                   numAttemps++;
+               } else {
+                  // Convertir vector a string
+                  string secretNumStr = vectorToString(secretNum);
+                  // Convertir string a wstring
+                  wstring secretNumW(secretNumStr.begin(), secretNumStr.end());
+                  MessageBox(hwnd, secretNumW.c_str(), L"Fin del juego", MB_OK);
                }
+            } 
          }
       }
       return 0;
@@ -184,6 +203,8 @@ void initializeInterface(HWND hwnd)
 // Función para mostrar el resultado de cada intento
 void createRow(HWND hwnd)
 {
+   char numInput[NUM_DIGITS];
+
    // Se calcula la altura de la fila
    int height = 43 * numAttemps;
 
@@ -192,7 +213,15 @@ void createRow(HWND hwnd)
 
    // Convertir datos a wstring
    wstring attemptStr = to_wstring(numAttemps);
-   wstring textNum = wstring(numInput, numInput + NUM_DIGITS);
+   wstring textNum = to_wstring(stoi(numInput));
+
+   // Covertir el número ingresado a un vector
+   vector<int> tryVec = attempt(stoi(numInput));
+
+   // Extraer las picas y fijas
+   pair<int, int> results = checkUp(secretNum, tryVec);
+   int fixeds = results.first;
+   int spades = results.second;
 
    // Crear la ventana con el número de intento
    CreateWindowEx(WS_EX_LTRREADING, L"Static", attemptStr.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, height, 160, 43, hwnd, NULL, NULL, NULL);
@@ -201,10 +230,10 @@ void createRow(HWND hwnd)
    CreateWindowEx(WS_EX_LTRREADING, L"Static", textNum.c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 160, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número de picas
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"No se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 320, height, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", to_wstring(spades).c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 320, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número de fijas
-   CreateWindowEx(WS_EX_LTRREADING, L"Static", L"Tampoco se sabe", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 480, height, 160, 43, hwnd, NULL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Static", to_wstring(fixeds).c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 480, height, 160, 43, hwnd, NULL, NULL, NULL);
 
    // Crear la ventana con el número de puntos
    CreateWindowEx(WS_EX_LTRREADING, L"Static", L"0", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 640, height, 160, 43, hwnd, NULL, NULL, NULL);
@@ -214,6 +243,12 @@ void createRow(HWND hwnd)
 
    // Eliminar el texto ingresado por el usuario
    SetWindowText(hattempText, L"");
+}
+
+// Función para calcular puntos
+int calculatePoints(int fixeds, int spades)
+{
+   return fixeds * 10 + spades * 5;
 }
 
 // Función para registrar la clase de la ventana de diálogo
@@ -232,8 +267,6 @@ void registerDialogClass(HINSTANCE hInstance)
 // Función para manejar los mensajes de la ventana de diálogo
 LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
- 
-
    switch (uMsg)
    {
       case WM_CLOSE:
