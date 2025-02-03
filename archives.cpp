@@ -1,9 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
 #include <unordered_set>
 #include <random>
+#include "functions.h"
 
 
 using namespace std;
@@ -30,27 +30,6 @@ int main() {
     return 0;
 }
 
-// Función que genera un número oculto aleatorio de 5 dígitos únicos
-vector<int> hideNum() {
-    vector<int> num;
-    unordered_set<int> numGen;
-
-    unsigned seed = static_cast<unsigned>(time(0));
-    mt19937 generator(seed);
-
-    uniform_int_distribution<int> distribution{0, 9};
-
-    while (num.size() < 5) {
-        int digit = distribution(generator);
-
-        if (numGen.find(digit) == numGen.end()) {
-            num.push_back(digit);
-            numGen.insert(digit);
-        }
-    }
-
-    return num;
-}
 
 // Función para guardar los puntajes en un archivo
 void saveScores(const string& playerName, const vector<int>& hideNum, int  totalAttempts) {
