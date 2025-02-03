@@ -8,30 +8,27 @@
 #include <utility>
 #include <algorithm>
 #include <stdlib.h>
+#include <iomanip>
 
 using namespace std;
 
 vector<int> hideNum();
 vector<int> attempt(int num);
-pair<int, int> checkUp(const vector<int>& num, const vector<int>& joinedNum);
+struct data checkUp(const vector<int>& num, const vector<int>& joinedNum);
+bool fullNum(string num);
+bool checkNum(string num);
+
+struct data{
+    int val1;
+    int val2;
+};
 
 int main(){
-    setlocale(LC_ALL, "spanish");
+    system("chcp 65001");
     
-    wcout << L"Número oculto: " << endl;
+    string num = "12345";
 
-    vector<int>num = hideNum();
-    for (auto i : num) {
-        wcout << i << L" ";  // Imprimir cada dígito
-    }
-
-    vector<int> tryVec = attempt(45678);
-
-    pair<int, int> result = checkUp(num, tryVec);
-
-
-    wcout << "\nFijas: " << result.first << endl;
-    wcout <<  "Picas: " << result.second << endl;
+    cout << checkNum(num) << endl;
 
     system("pause");
 
@@ -40,11 +37,12 @@ int main(){
 }
 
 //Funcion que comprobará el numero ingresado con el numero generado aleatoriamente.
-pair<int, int> checkUp(const vector<int>& num, const vector<int>& joinedNum){
+struct data checkUp(const vector<int>& num, const vector<int>& joinedNum){
     int fijas = 0, picas = 0;
     unordered_set<int> numSet(num.begin(), num.end());
+    struct data results;
 
-    for (int i = 0; i < num.size(); i++){
+    for (size_t i = 0; i < num.size(); i++){
         if (num[i] == joinedNum[i]){
             fijas++;
         }
@@ -58,7 +56,10 @@ pair<int, int> checkUp(const vector<int>& num, const vector<int>& joinedNum){
         }
     }
     
-    return make_pair(fijas, picas);
+    results.val1 = fijas;
+    results.val2 = picas;
+    
+    return results;
 
 }
 
@@ -96,4 +97,39 @@ vector<int> hideNum(){
     }
 
     return num;
+}
+
+//Función que comprueba si el valor ingresado contiene letras (true si no contiene, false si si)
+bool fullNum(string num){
+    bool compro;
+
+    for (int i = 0; i < num.size(); i++){
+        if (isdigit(num[i])){
+            compro = true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    return compro;
+}
+
+//Función que comprueba si hay un número repetido en el valor ingresado (true si no hay valores repetidos, false si hay)
+bool checkNum(string num){
+    bool check = true;
+
+    bool seen[10] = {false};
+
+    for (int i = 0; i < num.size(); i++){
+        if (isdigit(num[i])){
+            int digit = num[i] - '0';
+            if (seen[digit]){
+                check = false;
+                break;
+            }
+            seen[digit] = true;
+        }
+    }
+    return check;
 }
