@@ -2,6 +2,7 @@
 #define UNICODE
 #endif 
 
+#include <cwchar>
 #include <windows.h>
 #include "functions.h"
 
@@ -16,16 +17,22 @@ using namespace std;
 # define MAX_USERNAME 50
 
 // Se declaran las funciones
-void createRow(HWND hwnd);
 void newAttempt(HWND hwnd); 
-void displayDialog(HWND hwnd);
+int spacesToPoints(int points); 
+void displayDialogW(HWND hwnd);
+void displayDialogR(HWND hwnd);
+struct data createRow(HWND hwnd);
 void initializeInterface(HWND hwnd);
 int calculatePoints(int fixeds, int spades);
-void registerDialogClass(HINSTANCE hInstance);
-void paintModalW(HWND hwnd, wstring text, int x, int y, int width);
+void registerDialogClassW(HINSTANCE hInstance);
+void registerDialogClassR(HINSTANCE hInstance);
+float spacesToUsername(char username[MAX_USERNAME]);
 LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void paintModal(HWND hwnd, wstring text, int x, int y, int width, COLORREF color);
+LRESULT CALLBACK DialogWProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK DialogRProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 
 // Se declara la estructura del jugador
 struct Player 
@@ -41,11 +48,14 @@ HWND hmainWindow;
 int numAttemps = 1;
 HBRUSH hBrushStatic;
 WNDPROC oldEditProc;
-vector<int> secretNum = hideNum();
+COLORREF colorBG = RGB(225, 160, 0);
 COLORREF colorRows = RGB(225, 225, 225);
+vector<int> secretNum = {1, 2, 3, 4, 5};
+string secretNumStr = vectorToString(secretNum);
+wstring secretNumW(secretNumStr.begin(), secretNumStr.end());
 
-// Se declaran variables de la ventana de diálogo
-HWND hTitle;
+// Se declaran variables de la ventana de bienvenida
+HWND hTitleW;
 HWND hAuthorO;
 HWND hAuthorB;
 HWND hAuthorT;
@@ -53,6 +63,15 @@ HWND hSubTitle;
 HWND hShowScores;
 HWND hUsernameLabel;
 HWND hUsernameInput;
+
+// Se declaran variables de la ventana de resultados
+HWND hExit;
+HWND hTitleR;
+HWND hPoints;
+HWND hNumSecret;
+HWND hSaveScores;
+wstring textTitleR;
+COLORREF colorModalR = RGB(0, 125, 30);
 
 // Función principal
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
@@ -68,7 +87,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
    wc.lpszClassName = CLASS_NAME;
 
    RegisterClass(&wc);
-   registerDialogClass(hInstance);
+   registerDialogClassW(hInstance);
+   registerDialogClassR(hInstance);
 
    // Se crea la ventana principal
    hmainWindow = CreateWindowEx(0, CLASS_NAME, L"PICAS Y FIJAS", WS_OVERLAPPEDWINDOW,
@@ -102,7 +122,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
       case WM_CREATE:
       {
          // Se muestra el modal
-         displayDialog(hwnd);
+         displayDialogW(hwnd);
          // Se inicializa la interfaz
          initializeInterface(hwnd);
          return 0;
@@ -111,7 +131,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
          PAINTSTRUCT ps;
          // Se crea el pincel
-         HBRUSH brush = CreateSolidBrush(RGB(225, 160, 0));
+         HBRUSH brush = CreateSolidBrush(colorBG);
          // Comienza el trazo
          HDC hdc = BeginPaint(hwnd, &ps);
 
@@ -179,11 +199,11 @@ void initializeInterface(HWND hwnd)
    oldEditProc = (WNDPROC) SetWindowLongPtr(hattempText, GWLP_WNDPROC, (LONG_PTR)EditProc);
 
    // Se crea el botón para adivinar
-   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"Adivinar", WS_CHILD | WS_VISIBLE | WS_BORDER, 358, 525, 88, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"ADIVINAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 358, 525, 88, 30, hwnd, (HMENU)NEW_ATTEMPT, NULL, NULL);
 }
 
 // Función para mostrar el resultado de cada intento
-void createRow(HWND hwnd)
+struct data createRow(HWND hwnd)
 {
    char numInput[NUM_DIGITS + 1];
 
@@ -228,6 +248,8 @@ void createRow(HWND hwnd)
 
    // Eliminar el texto ingresado por el usuario
    SetWindowText(hattempText, L"");
+
+   return results;
 }
 
 // Función para crear un nuevo intento
@@ -247,16 +269,46 @@ void newAttempt(HWND hwnd)
    else 
    {
       // Si no ha superado la máxima cantidad de itentos
-      if (numAttemps <= MAX_ATTEMPTS) {
+      if (numAttemps < MAX_ATTEMPTS) 
+      {
          // Se crea la fila
-         createRow(hwnd);
+         struct data results = createRow(hwnd);
+         // Se valida si el usuario adivinó el número
+         if (results.val1 == NUM_DIGITS) 
+         {
+            // Se le añade una bonificación al jugador
+            player.points += (MAX_ATTEMPTS - numAttemps) * 1000;
+
+            // Se convierte el username a wstring
+            wstring usernameText(player.username, player.username + strlen(player.username));
+
+            textTitleR = L"FELICIDADES " + usernameText;
+            displayDialogR(hwnd);
+            numAttemps--;
+         }
          numAttemps++;
-      } else {
-         // Convertir vector a string
-         string secretNumStr = vectorToString(secretNum);
-         // Convertir string a wstring
-         wstring secretNumW(secretNumStr.begin(), secretNumStr.end());
-         MessageBox(hwnd, secretNumW.c_str(), L"Fin del juego", MB_OK);
+      } 
+      // Si ha superado la máxima cantidad de intentos
+      else 
+      {
+         // Se crea la fila
+         struct data results = createRow(hwnd);
+
+         // Se convierte el username a wstring
+         wstring usernameText(player.username, player.username + strlen(player.username));
+
+         // Se valida si el usuario adivinó el número
+         if (results.val1 < NUM_DIGITS) 
+         {
+            colorModalR = RGB(200, 0, 0);
+            textTitleR = L"HAS PERDIDO " + usernameText;
+            displayDialogR(hwnd);
+         }
+         else 
+         {
+            textTitleR = L"FELICIDADES " + usernameText;
+            displayDialogR(hwnd);
+         }
       }
    } 
 }
@@ -282,20 +334,20 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Funciones para el diálogo modal de bienvenida - - - - - - - - - - - - - - - - - - - - - - - - //
 
 // Función para registrar la clase de la ventana de diálogo
-void registerDialogClass(HINSTANCE hInstance)
+void registerDialogClassW(HINSTANCE hInstance)
 {
-    WNDCLASS dialog = { };
+    WNDCLASS dialogW = { };
 
     // Se le asignan las propiedades al objeto dialog
-    dialog.hInstance = hInstance;
-    dialog.lpfnWndProc = DialogProcedure;
-    dialog.lpszClassName = L"DialogClass";
+    dialogW.hInstance = hInstance;
+    dialogW.lpfnWndProc = DialogWProcedure;
+    dialogW.lpszClassName = L"DialogWClass";
 
-    RegisterClass(&dialog);
+    RegisterClass(&dialogW);
 }
 
 // Función para manejar los mensajes de la ventana de diálogo
-LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK DialogWProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
@@ -305,11 +357,7 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
          GetWindowTextA(hUsernameInput, player.username, MAX_USERNAME);    
 
          // Se valida si el usuario ingresó un nombre
-         if (strlen(player.username) > 0) 
-         {
-            DestroyWindow(hwnd); // Se elimina la ventana de diálogo
-            GetWindowTextA(hUsernameInput, player.username, MAX_USERNAME); // Se obtiene el username ingresado
-         }
+         if (strlen(player.username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
          else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
          return 0;
       }
@@ -327,12 +375,12 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
          EndPaint(hwnd, &ps);
          DeleteObject(hBrush);
          // Se pintan las ventanas dentro de la modal
-         paintModalW(hTitle, L"¡PICAS Y FIJAS!", 200, 0, 15);
-         paintModalW(hSubTitle, L"El juego consiste en adivinar un número de 5 dígitos", 80, 0, 52);
-         paintModalW(hUsernameLabel, L"Por favor ingrese su usuario:", 25, 0, 30);
-         paintModalW(hAuthorO, L"AUTORES: Juan Manuel Otálora Hernández", 100, 0, 40);
-         paintModalW(hAuthorB, L"Johan Stevan Bermeo Buitrago", 140, 0, 28);
-         paintModalW(hAuthorT, L"Juan Camilo Triana Paipa", 157, 0, 25);
+         paintModal(hTitleW, L"¡PICAS Y FIJAS!", 200, 0, 15, colorBG);
+         paintModal(hSubTitle, L"El juego consiste en adivinar un número de 5 dígitos", 80, 0, 52, colorBG);
+         paintModal(hUsernameLabel, L"Por favor ingrese su usuario:", 25, 0, 30, colorBG);
+         paintModal(hAuthorO, L"AUTORES: Juan Manuel Otálora Hernández", 100, 0, 40, colorBG);
+         paintModal(hAuthorB, L"Johan Stevan Bermeo Buitrago", 140, 0, 28, colorBG);
+         paintModal(hAuthorT, L"Juan Camilo Triana Paipa", 157, 0, 25, colorBG);
 
          return 0;
       } 
@@ -346,12 +394,7 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                GetWindowTextA(hUsernameInput, player.username, MAX_USERNAME);
 
                // Se valida si el usuario ingresó un nombre
-                        // Se valida si el usuario ingresó un nombre
-               if (strlen(player.username) > 0) 
-               {
-                  DestroyWindow(hwnd); // Se elimina la ventana de diálogo
-                  GetWindowTextA(hUsernameInput, player.username, MAX_USERNAME); // Se obtiene el username ingresado
-               }
+               if (strlen(player.username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
                else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
                return 0;
             }
@@ -368,13 +411,13 @@ LRESULT CALLBACK DialogProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 }
 
 // Función para mostrar la ventana de diálogo
-void displayDialog(HWND hwnd)
+void displayDialogW(HWND hwnd)
 {
    // Se crea la ventana de diálogo 
-   HWND dialogModal = CreateWindowW(L"DialogClass", L"Bienvenido", WS_VISIBLE | WS_OVERLAPPEDWINDOW | SS_CENTERIMAGE | SS_CENTER, 525, 100, 500, 500, hwnd, NULL, NULL, NULL);
+   HWND dialogModal = CreateWindowW(L"DialogWClass", L"Bienvenido", WS_VISIBLE | WS_OVERLAPPEDWINDOW | SS_CENTERIMAGE | SS_CENTER, 525, 100, 500, 500, hwnd, NULL, NULL, NULL);
 
    // Se crea el texto de bienvenida
-   hTitle = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
+   hTitleW = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
 
    // Se crea el texto para explicar el juego
    hSubTitle = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 55, 500, 50, dialogModal, NULL, NULL, NULL);
@@ -398,11 +441,125 @@ void displayDialog(HWND hwnd)
 
 }
 
-// Función para pintar las ventanas de la modal
-void paintModalW(HWND hwnd, wstring text, int x, int y, int width)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Funciones para el diálogo modal de resultados - - - - - - - - - - - - - - - - - - - - - - - - //
+
+// Función para registrar la clase de la ventana de diálogo
+void registerDialogClassR(HINSTANCE hInstance)
+{
+    WNDCLASS dialogR = { };
+
+    // Se le asignan las propiedades al objeto dialog
+    dialogR.hInstance = hInstance;
+    dialogR.lpfnWndProc = DialogRProcedure;
+    dialogR.lpszClassName = L"DialogRClass";
+
+    RegisterClass(&dialogR);
+}
+
+// Función para manejar los mensajes de la ventana de diálogo
+LRESULT CALLBACK DialogRProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   switch (uMsg)
+   {
+      case WM_CLOSE:
+      {
+         // Se cierra la ventana principal
+         DestroyWindow(hmainWindow);
+         return 0;
+      }
+      case WM_PAINT:
+      {
+         PAINTSTRUCT ps;
+         // Comienza el trazo
+         HDC hdc = BeginPaint(hwnd, &ps);
+
+            // Se crea el pincel
+            HBRUSH hBrush = CreateSolidBrush(colorModalR);
+            // Se pinta la pantalla del modal
+            FillRect(hdc, &ps.rcPaint, hBrush);
+
+         EndPaint(hwnd, &ps);
+         DeleteObject(hBrush);
+         // Se pintan las ventanas dentro del modal
+         int spacesTitle = spacesToUsername(player.username);
+         paintModal(hTitleR, textTitleR, 180 - round(spacesTitle*5.5), 0, 16 + round(spacesTitle*2.7), colorModalR);
+
+         // Se convierte el número secreto a wstring
+         wstring numSecretText = L"El número es: " + secretNumW;
+         paintModal(hNumSecret, numSecretText, 180, 0, 20, colorModalR);
+
+         int spacesPoints = spacesToPoints(player.points);
+         // Se convierte el puntaje a wstring
+         string pointsStr = to_string(player.points);
+         wstring pointsW(pointsStr.begin(), pointsStr.end());
+         wstring pointsText = L"Puntos: " + pointsW;
+         paintModal(hPoints, pointsText, 205 - spacesPoints, 0, 11 + spacesPoints, colorModalR);
+
+         return 0;
+      } 
+      case WM_COMMAND:
+      {
+         // TODO: guardar los puntajes
+         // TODO: volver a jugar
+         switch (LOWORD(wParam))
+         {
+            case CLOSE_MODAL:
+            {
+               return 0;
+            }
+         } 
+         return 0;
+      }
+   }
+   return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+// Función para calcular los espacios para los puntos
+int spacesToPoints(int points) 
+{
+   if (points < 1000) return 1;
+   else if (points < 10000) return 2;
+   else return 3;
+}
+
+// Función para calcular los espacios para el username
+float spacesToUsername(char username[MAX_USERNAME])
+{
+   if (strlen(username) < 5) return 0.8;
+   else if (strlen(username) < 11) return 2.5;
+   else if (strlen(username) < 14) return 3.2;
+   else if (strlen(username) < 17) return 4.2;
+   else return 6.1;
+}
+
+// Función para mostrar la ventana de diálogo
+void displayDialogR(HWND hwnd)
+{
+   // Se crea la ventana de diálogo 
+   HWND dialogModal = CreateWindowW(L"DialogRClass", L"FIN DEL JUEGO", WS_VISIBLE | WS_OVERLAPPEDWINDOW | SS_CENTERIMAGE | SS_CENTER, 520, 200, 510, 300, hwnd, NULL, NULL, NULL);
+
+   // Se crea el título del modal
+   hTitleR = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_EX_TRANSPARENT, 0, 25, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el texto para mostrar el número secreto
+   hNumSecret = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 55, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el texto para mostrar el puntaje
+   hPoints = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 100, 500, 50, dialogModal, NULL, NULL, NULL);
+
+   // Se crea el botón para guardar los puntajes
+   hSaveScores = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"GUARDAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 40, 175, 150, 30, dialogModal, (HMENU) SHOW_SCORES, NULL, NULL);
+
+   // Se crea el boton para salir
+   hExit = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VOLVER A JUGAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 310, 175, 150, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
+
+}
+
+// Función para pintar las ventanas del modal
+void paintModal(HWND hwnd, wstring text, int x, int y, int width, COLORREF color)
 {
    PAINTSTRUCT ps;
-   HBRUSH hBrush = CreateSolidBrush(RGB(225, 160, 0));
+   HBRUSH hBrush = CreateSolidBrush(color);
 
    // Commienza el trazo
    HDC hdc = BeginPaint(hwnd, &ps);
