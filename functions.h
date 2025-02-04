@@ -20,40 +20,39 @@ struct data checkUp(const vector<int>& num, const vector<int>& joinedNum);
 bool fullNum(string num);
 bool checkNum(string num);
 
-struct data{
+struct data {
     int val1;
     int val2;
 };
 
 //Funcion que comprobará el numero ingresado con el numero generado aleatoriamente.
-struct data checkUp(const vector<int>& num, const vector<int>& joinedNum){
-    int fijas = 0, picas = 0;
+struct data checkUp(const vector<int>& num, const vector<int>& joinedNum) {
+    int fixeds = 0, spades = 0;
     unordered_set<int> numSet(num.begin(), num.end());
     struct data results;
 
     for (size_t i = 0; i < num.size(); i++){
         if (num[i] == joinedNum[i]){
-            fijas++;
+            fixeds++;
         }
     }
 
     for (size_t i = 0; i < num.size(); ++i){
         if (num[i] != joinedNum[i]){
             if (numSet.find(joinedNum[i]) != numSet.end()){
-                picas++;
+                spades++;
             }
         }
     }
     
-    results.val1 = fijas;
-    results.val2 = picas;
+    results.val1 = fixeds;
+    results.val2 = spades;
     
     return results;
-
 }
 
 //Funcion que permite el ingreso de un numero y lo convierte a un vector.
-vector<int> attempt(int num){
+vector<int> attempt(int num) {
     vector<int> joinedNum;
 
     while (num > 0){
@@ -67,7 +66,7 @@ vector<int> attempt(int num){
 }
 
 //Función que crea un número aleatorio de 5 cifras sin repetir dígitos
-vector<int> hideNum(){
+vector<int> hideNum() {
     vector<int> num;
     unordered_set<int> numGen;
 
@@ -97,7 +96,7 @@ string vectorToString(const vector<int>& vec) {
 }
 
 //Función que comprueba si el valor ingresado contiene letras (true si no contiene, false si si)
-bool fullNum(string num){
+bool fullNum(string num) {
     bool compro;
 
     for (int i = 0; i < num.size(); i++){
@@ -113,7 +112,7 @@ bool fullNum(string num){
 }
 
 //Función que comprueba si hay un número repetido en el valor ingresado (true si no hay valores repetidos, false si hay)
-bool checkNum(string num){
+bool checkNum(string num) {
     bool check = true;
 
     bool seen[10] = {false};
