@@ -22,6 +22,10 @@ int main() {
     // Guardar el puntaje en el archivo
     saveScores(playerName, points, hideNumResult);
 
+    // Mostrar los puntajes guardados
+    string allScores = getScore();
+    cout << "Puntajes guardados:\n" << allScores;
+
     return 0;
 }
 
