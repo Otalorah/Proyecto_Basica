@@ -7,6 +7,7 @@
 using namespace std;
 
 void saveScores(const string& playerName, int points, const vector<int>& hideNumResult);
+string getScore();
 
 int main() {
     // Convertir el nombre de usuario de char a string
@@ -41,3 +42,23 @@ void saveScores(const string& playerName, int points, const vector<int>& hideNum
         cout << "ERROR: No se pudo abrir el archivo para escritura." << endl;
     }
 }
+
+
+// Función para obtener los puntajes guardados
+string getScore() {
+    ifstream file("scores.txt");  // Abrir el archivo en modo lectura
+    string scores;
+    string line;
+    
+    if (file.is_open()) {
+        while (getline(file, line)) {
+            scores += line + "\n";  // Guardar cada línea en el string
+        }
+        file.close();
+    } else {
+        scores = "ERROR: No se pudo abrir el archivo para lectura.";
+    }
+
+    return scores;  
+}
+
