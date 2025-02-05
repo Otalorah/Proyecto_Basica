@@ -1,65 +1,43 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <unordered_set>
-#include <random>
 #include "functions.h"
-
+#include "main.h"
 
 using namespace std;
 
-
-string name();
-vector<int> hideNum();
-vector<int>attempts();
-void saveScores(const string& playerName, const vector<int>& hideNum, int totalAttempts);
+void saveScores(const string& playerName, int points, const vector<int>& hideNumResult);
 
 int main() {
-    // Nombre dle jugador
-    string playerName = name();
-    
-    // Numero ocutlo
-    vector<int> hideNumResult = hideNum();
+    // Convertir el nombre de usuario de char a string
+    string playerName(player.username);
 
-    // Numero total de  intentos usados por el ususario
-    int totalAttempts = 3;
+    // Se obtiene el número oculto desde 'functions.h'
+    vector<int> hideNumResult = hideNum(); 
+    
+    // Se obtiene el puntaje total desde 'main.h'
+    int points = player.points;
 
     // Guardar el puntaje en el archivo
-    saveScores(playerName, hideNumResult, totalAttempts);
+    saveScores(playerName, points, hideNumResult);
 
     return 0;
 }
 
-
 // Función para guardar los puntajes en un archivo
-void saveScores(const string& playerName, const vector<int>& hideNum, int  totalAttempts) {
+void saveScores(const string& playerName, int points, const vector<int>& hideNumResult) {
     ofstream file("scores.txt", ios::app);  // Abrir el archivo en modo anexar
     if (file.is_open()) {
         file << "Jugador: " << playerName << "\n";
         file << "Número oculto adivinado: ";
-        for (const auto& digit : hideNum) {  
-            file << digit;// Escribir cada dígito
+        for (const auto& digit : hideNumResult) {  
+            file << digit;  
         }
-        file << "\nIntentos: " << totalAttempts << "\n";
+        file << "\nPuntos Totales: " << points << "\n";
         file << "--------------------------\n";
         file.close();
         cout << "PUNTAJE GUARDADO CORRECTAMENTE." << endl;
     } else {
-        cout << "ERROR: Los datos no se guardaron correctamente." << endl;
+        cout << "ERROR: No se pudo abrir el archivo para escritura." << endl;
     }
 }
-
-string name(){
-
-    string playerName;
-    cout<< "Ingrese nombre de judador: "<< endl;
-    cin>>playerName;
-    return playerName;
-    
-}
-
-
-
-
-
-
