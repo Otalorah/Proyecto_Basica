@@ -14,11 +14,12 @@
 using namespace std;
 
 vector<int> hideNum();
-vector<int> attempt(int num);
-string vectorToString(const vector<int>& vec);
-struct data checkUp(const vector<int>& num, const vector<int>& joinedNum);
 bool fullNum(string num);
 bool checkNum(string num);
+vector<int> attempt(int num);
+wstring stringToWString(const string& str);
+string vectorToString(const vector<int>& vec);
+struct data checkUp(const vector<int>& num, const vector<int>& joinedNum);
 
 struct data {
     int val1;
@@ -128,4 +129,39 @@ bool checkNum(string num) {
         }
     }
     return check;
+}
+
+// Función para convertir un string a wstring
+wstring stringToWString(const string& str) {
+    // Calcula el tamaño necesario para la cadena de caracteres anchos.
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    // Crea un wstring con el tamaño necesario.
+    wstring wstrTo(size_needed, 0);
+    // Convierte la cadena de entrada UTF-8 a una cadena de caracteres anchos.
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    return wstrTo;
+}
+
+// Función para convertir un string a UTF-8
+string convertToUTF8(const char* str) {
+    // Calcula el tamaño necesario para la cadena de caracteres anchos.
+    int size_needed = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
+    if (size_needed <= 0) {
+        return string();
+    }
+    // Crea un vector para contener la cadena de caracteres anchos.
+    vector<wchar_t> wstrTo(size_needed);
+    // Convierte la cadena de entrada ANSI a una cadena de caracteres anchos.
+    MultiByteToWideChar(CP_ACP, 0, str, -1, &wstrTo[0], size_needed);
+
+    // Calcula el tamaño necesario para la cadena UTF-8.
+    size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstrTo[0], -1, NULL, 0, NULL, NULL);
+    if (size_needed <= 0) {
+        return string();
+    }
+    // Crea una cadena para contener la cadena codificada en UTF-8.
+    string strTo(size_needed - 1, 0); // -1 para eliminar el carácter NUL
+    // Convierte la cadena de caracteres anchos a una cadena codificada en UTF-8.
+    WideCharToMultiByte(CP_UTF8, 0, &wstrTo[0], -1, &strTo[0], size_needed, NULL, NULL);
+    return strTo;
 }

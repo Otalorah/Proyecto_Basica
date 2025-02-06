@@ -4,17 +4,23 @@
 
 #include <cwchar>
 #include <windows.h>
+#include "files.h"
 #include "functions.h"
 
 using namespace std;
 
 // Se definen las constantes
 # define NUM_DIGITS 5
+# define MAX_ATTEMPTS 10
+# define MAX_USERNAME 50
+
+// Se definen los eventos del programa
 # define NEW_ATTEMPT 1
 # define CLOSE_MODAL 2
 # define SHOW_SCORES 3
-# define MAX_ATTEMPTS 10
-# define MAX_USERNAME 50
+# define SAVE_SCORE 4
+# define PLAY_AGAIN 5
+# define WM_RESET (WM_USER + 1)
 
 // Se declaran las funciones
 void newAttempt(HWND hwnd); 
@@ -65,9 +71,9 @@ HWND hUsernameLabel;
 HWND hUsernameInput;
 
 // Se declaran variables de la ventana de resultados
-HWND hExit;
 HWND hTitleR;
 HWND hPoints;
+HWND hRestart;
 HWND hNumSecret;
 HWND hSaveScores;
 wstring textTitleR;
@@ -116,6 +122,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
+      case WM_RESET:
+      {
+         HWND hChild = GetWindow(hwnd, GW_CHILD);
+         while (hChild != NULL) {
+             HWND hNextChild = GetWindow(hChild, GW_HWNDNEXT);
+             DestroyWindow(hChild);
+             hChild = hNextChild;
+         }
+         // Se muestra el modal
+         displayDialogW(hwnd);
+         // Se inicializa la interfaz
+         initializeInterface(hwnd);
+         
+         // Se resetean las variables del juego
+         player.points = 0;
+         numAttemps = 1;
+         secretNum = hideNum();
+
+         InvalidateRect(hwnd, NULL, TRUE); // Marca la ventana para que se repinte
+         UpdateWindow(hwnd); // Fuerza el repintado inmediato
+         return 0;
+      }
       case WM_DESTROY:
          PostQuitMessage(0);
          return 0;
@@ -259,13 +287,13 @@ void newAttempt(HWND hwnd)
    GetWindowTextA(hattempText, attempText, NUM_DIGITS + 1);
 
    // Se valida si el número ingresado tiene 5 cifras
-   if (strlen(attempText) < NUM_DIGITS) MessageBox(hwnd, L"Ingrese un número de 5 cifras", L"Número inválido", MB_OK);
+   if (strlen(attempText) < NUM_DIGITS) MessageBox(hwnd, L"Ingrese un número de 5 cifras", L"Número inválido", MB_OK | MB_ICONERROR);
    // Se valida si el número empieza por 0
-   else if (attempText[0] == '0') MessageBox(hwnd, L"El número no puede empezar por 0", L"Número inválido", MB_OK);
+   else if (attempText[0] == '0') MessageBox(hwnd, L"El número no puede empezar por 0", L"Número inválido", MB_OK | MB_ICONERROR);
    // Se valida si el número ingresado tiene letras
-   else if (!fullNum(attempText)) MessageBox(hwnd, L"No se aceptan carácteres que no sean dígitos", L"Número inválido", MB_OK);
+   else if (!fullNum(attempText)) MessageBox(hwnd, L"No se aceptan carácteres que no sean dígitos", L"Número inválido", MB_OK | MB_ICONERROR);
    // Se valida si el número ingresado tiene un número repetido
-   else if (!checkNum(attempText)) MessageBox(hwnd, L"El número no puede tener dígitos repetidos", L"Número inválido", MB_OK);
+   else if (!checkNum(attempText)) MessageBox(hwnd, L"El número no puede tener dígitos repetidos", L"Número inválido", MB_OK | MB_ICONERROR);
    else 
    {
       // Si no ha superado la máxima cantidad de itentos
@@ -280,9 +308,9 @@ void newAttempt(HWND hwnd)
             player.points += (MAX_ATTEMPTS - numAttemps) * 1000;
 
             // Se convierte el username a wstring
-            wstring usernameText(player.username, player.username + strlen(player.username));
-
-            textTitleR = L"FELICIDADES " + usernameText;
+            string username = convertToUTF8(player.username);
+            wstring usernamew = stringToWString(username);
+            textTitleR = L"FELICIDADES " + usernamew;
             displayDialogR(hwnd);
             numAttemps--;
          }
@@ -295,18 +323,19 @@ void newAttempt(HWND hwnd)
          struct data results = createRow(hwnd);
 
          // Se convierte el username a wstring
-         wstring usernameText(player.username, player.username + strlen(player.username));
+         string username = convertToUTF8(player.username);
+         wstring usernamew = stringToWString(username);
 
          // Se valida si el usuario adivinó el número
          if (results.val1 < NUM_DIGITS) 
          {
             colorModalR = RGB(200, 0, 0);
-            textTitleR = L"HAS PERDIDO " + usernameText;
+            textTitleR = L"HAS PERDIDO " + usernamew;
             displayDialogR(hwnd);
          }
          else 
          {
-            textTitleR = L"FELICIDADES " + usernameText;
+            textTitleR = L"FELICIDADES " + usernamew;
             displayDialogR(hwnd);
          }
       }
@@ -325,7 +354,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
    if (uMsg == WM_KEYDOWN && wParam == VK_RETURN) 
    {
       // Reenviar el mensaje a la ventana principal
-      SendMessage(GetParent(hwnd), WM_COMMAND, NEW_ATTEMPT, 0);
+      SendMessage(hmainWindow, WM_COMMAND, NEW_ATTEMPT, 0);
       return 0;
    }
    return CallWindowProc(oldEditProc, hwnd, uMsg, wParam, lParam);
@@ -358,7 +387,7 @@ LRESULT CALLBACK DialogWProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
          // Se valida si el usuario ingresó un nombre
          if (strlen(player.username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
-         else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
+         else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK | MB_ICONERROR);
          return 0;
       }
       case WM_PAINT:
@@ -395,13 +424,16 @@ LRESULT CALLBACK DialogWProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
                // Se valida si el usuario ingresó un nombre
                if (strlen(player.username) > 0) DestroyWindow(hwnd); // Se elimina la ventana de diálogo
-               else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK); // Se muestra un mensaje de error
+               else MessageBox(hwnd, L"Por favor ingrese un usuario", L"Error", MB_OK | MB_ICONERROR);
                return 0;
             }
             case SHOW_SCORES:
             {
                // Se muestra un mensaje con los puntajes
-               MessageBox(hwnd, L"Los puntajes se mostrarán aquí", L"Puntajes", MB_OK);
+               string scores = getScore();
+               wstring scoresW = stringToWString(scores);
+               if (scoresW == L"ERROR") MessageBox(hwnd, L"Error al ver los puntajes", scoresW.c_str(), MB_OK | MB_ICONERROR);
+               else MessageBox(hwnd, scoresW.c_str(), L"PUNTAJES", MB_OK);
             }
          } 
          return 0;
@@ -499,12 +531,22 @@ LRESULT CALLBACK DialogRProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
       } 
       case WM_COMMAND:
       {
-         // TODO: guardar los puntajes
-         // TODO: volver a jugar
          switch (LOWORD(wParam))
          {
-            case CLOSE_MODAL:
+            // Se guarda la partida actual en un archivo
+            case SAVE_SCORE:
             {
+               string username = convertToUTF8(player.username);
+               bool result = saveScores(username, player.points, secretNum);
+               if (result) MessageBox(hwnd, L"Se guardo la partida correctamente", L"PUNTAJE", MB_OK);
+               else MessageBox(hwnd, L"Error al guardar la partida", L"ERROR", MB_OK | MB_ICONERROR);
+               return 0;
+            }
+            case PLAY_AGAIN:
+            {
+               DestroyWindow(hwnd);
+               // Se envía el mensaje a la ventana principal
+               SendMessage(hmainWindow, WM_RESET, 0, 0);
                return 0;
             }
          } 
@@ -526,9 +568,11 @@ int spacesToPoints(int points)
 float spacesToUsername(char username[MAX_USERNAME])
 {
    if (strlen(username) < 5) return 0.8;
+   else if (strlen(username) < 8) return 1.5;
    else if (strlen(username) < 11) return 2.5;
    else if (strlen(username) < 14) return 3.2;
-   else if (strlen(username) < 17) return 4.2;
+   else if (strlen(username) < 16) return 4.1;
+   else if (strlen(username) < 17) return 5.1;
    else return 6.1;
 }
 
@@ -548,10 +592,10 @@ void displayDialogR(HWND hwnd)
    hPoints = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 100, 500, 50, dialogModal, NULL, NULL, NULL);
 
    // Se crea el botón para guardar los puntajes
-   hSaveScores = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"GUARDAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 40, 175, 150, 30, dialogModal, (HMENU) SHOW_SCORES, NULL, NULL);
+   hSaveScores = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"GUARDAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 40, 175, 150, 30, dialogModal, (HMENU) SAVE_SCORE, NULL, NULL);
 
    // Se crea el boton para salir
-   hExit = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VOLVER A JUGAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 310, 175, 150, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
+   hRestart = CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VOLVER A JUGAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 310, 175, 150, 30, dialogModal, (HMENU) PLAY_AGAIN, NULL, NULL);
 
 }
 
