@@ -40,8 +40,7 @@ LRESULT CALLBACK DialogWProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 LRESULT CALLBACK DialogRProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 // Se declara la estructura del jugador
-struct Player 
-{
+struct Player  {
    int points;
    char username[MAX_USERNAME];
 } player;
@@ -452,13 +451,13 @@ void displayDialogW(HWND hwnd) {
    hSubTitle = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 55, 500, 50, dialogModal, NULL, NULL, NULL);
 
    // Se crea el texto para indicar el ingreso de un username
-   hUsernameLabel = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 125, 225, 250, 15, dialogModal, NULL, NULL, NULL);
+   hUsernameLabel = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 125, 175, 250, 15, dialogModal, NULL, NULL, NULL);
 
    // Se crea el cuadro para ingresar el username
-   hUsernameInput = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 120, 250, 250, 15, dialogModal, NULL, NULL, NULL);
+   hUsernameInput = CreateWindowEx(WS_EX_LTRREADING, L"Edit", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 120, 200, 250, 15, dialogModal, NULL, NULL, NULL);
 
    // Se crea el botón para ver los puntajes
-   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VER PUNTAJES", WS_CHILD | WS_VISIBLE | WS_BORDER, 196, 275, 108, 30, dialogModal, (HMENU) SHOW_SCORES, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"VER PUNTAJES", WS_CHILD | WS_VISIBLE | WS_BORDER, 196, 225, 108, 30, dialogModal, (HMENU) SHOW_SCORES, NULL, NULL);
 
    // Se crea el texto para mostrar a los autores
    hAuthorO = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 325, 500, 25, dialogModal, NULL, NULL, NULL);
@@ -466,7 +465,7 @@ void displayDialogW(HWND hwnd) {
    hAuthorT = CreateWindowEx(WS_EX_LTRREADING, L"Static", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE, 0, 375, 500, 25, dialogModal, NULL, NULL, NULL);
 
    // Se crea el boton para iniciar
-   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"INICIAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 216, 425, 68, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
+   CreateWindowEx(WS_EX_LTRREADING, L"Button", L"INICIAR", WS_CHILD | WS_VISIBLE | WS_BORDER, 216, 415, 68, 30, dialogModal, (HMENU) CLOSE_MODAL, NULL, NULL);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Funciones para el diálogo modal de resultados - - - - - - - - - - - - - - - - - - - - - - - - //
