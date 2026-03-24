@@ -1,0 +1,12 @@
+.git
+.gitignore
+programa.exe
+scores.txt
+*.o
+*.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.log
+.vscode

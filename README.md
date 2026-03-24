@@ -48,6 +48,40 @@ En este juego, el objetivo es adivinar un número de 5 cifras que contiene dígi
 3. Compila el código usando el siguiente comando (asegúrate de tener MinGW o g++ instalado): g++ -mwindows -municode -o main main.cpp.
 4. Ejecuta el archivo main.exe
 
+## Compilar .exe con Docker
+
+Este proyecto usa WinAPI (`windows.h`). La forma recomendada con Docker en este repositorio es usar Docker como compilador para generar `game.exe` directamente en tu carpeta del proyecto.
+
+### 1) Construir la imagen de compilación
+
+```bash
+docker build -t picas-fijas-builder .
+```
+
+Si ya habías construido la imagen antes, reconstruye sin caché para aplicar cambios del compilador:
+
+```bash
+docker build --no-cache -t picas-fijas-builder .
+```
+
+### 2) Generar `game.exe` en el directorio del proyecto
+
+En **Windows PowerShell**:
+
+```powershell
+docker run --rm -v "${PWD}:/src" -w /src picas-fijas-builder
+```
+
+En **Linux/macOS**:
+
+```bash
+docker run --rm -v "$PWD:/src" -w /src picas-fijas-builder
+```
+
+Al finalizar, tendrás el archivo `game.exe` en la raíz del proyecto.
+
+La imagen compila el ejecutable con enlace estático para evitar errores por DLL de MinGW incompatibles en Windows.
+
 ## Preview
 
 <p align="center">
