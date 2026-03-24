@@ -1,68 +1,35 @@
-#include <iostream>
 #include <fstream>
-#include <string>
-#include "functions.h"
-#include "main.h"
+#include <iostream>
+#include "files.h"
 
 using namespace std;
 
-void saveScores(const string& playerName, int points, const vector<int>& hideNumResult);
-string getScore();
-
-int main() {
-    // Convertir el nombre de usuario de char a string
-    string playerName(player.username);
-
-    // Se obtiene el número oculto desde 'functions.h'
-    vector<int> hideNumResult = hideNum(); 
-    
-    // Se obtiene el puntaje total desde 'main.h'
-    int points = player.points;
-
-    // Guardar el puntaje en el archivo
-    saveScores(playerName, points, hideNumResult);
-
-    // Mostrar los puntajes guardados
-    string allScores = getScore();
-    cout << "Puntajes guardados:\n" << allScores;
-
-    return 0;
-}
-
-// Función para guardar los puntajes en un archivo
-void saveScores(const string& playerName, int points, const vector<int>& hideNumResult) {
-    ofstream file("scores.txt", ios::app);  // Abrir el archivo en modo anexar
+bool saveScores(const string& playerName, int points, const vector<int>& hideNumResult) {
+    ofstream file("scores.txt", ios::app);
     if (file.is_open()) {
         file << "Jugador: " << playerName << "\n";
         file << "Número oculto adivinado: ";
-        for (const auto& digit : hideNumResult) {  
-            file << digit;  
+        for (const auto& digit : hideNumResult) {
+            file << digit;
         }
         file << "\nPuntos Totales: " << points << "\n";
         file << "--------------------------\n";
         file.close();
-        cout << "PUNTAJE GUARDADO CORRECTAMENTE." << endl;
-    } else {
-        cout << "ERROR: No se pudo abrir el archivo para escritura." << endl;
+        return true;
     }
+    return false;
 }
 
-
-// Función para obtener los puntajes guardados
 string getScore() {
-    ifstream file("scores.txt");  // Abrir el archivo en modo lectura
-    string scores;
-    string line;
-    
+    ifstream file("scores.txt");
+    string scores, line;
     if (file.is_open()) {
         while (getline(file, line)) {
-            scores += line + "\n";  // Guardar cada línea en el string
+            scores += line + "\n";
         }
         file.close();
     } else {
-        scores = "ERROR: No se pudo abrir el archivo para lectura.";
+        scores = "ERROR";
     }
-
-    return scores;  
+    return scores;
 }
-
